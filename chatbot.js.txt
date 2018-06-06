@@ -1,0 +1,54 @@
+// Example 4: implements app actions.
+
+var prompt = require('prompt-sync')();
+var AssistantV1 = require('watson-developer-cloud/assistant/v1');
+
+// Set up Assistant service wrapper.
+var service = new AssistantV1({
+  username: 'd9fea505-6ca9-43b1-88c6-701db86faaa4', // replace with service username
+  password: '0NyQTOaOf5E6', // replace with service password
+  version: '2018-02-16'
+});
+
+var workspace_id = '2aacf213-ca4a-4f99-85f7-0fa79af444e8'; // replace with workspace ID
+
+// Start conversation with empty message.
+service.message({
+  workspace_id: workspace_id
+  }, processResponse);
+
+// Process the service response.
+function processResponse(err, response) {
+  if (err) {
+    console.error(err); // something went wrong
+    return;
+  }
+
+  var endConversation = false;
+
+  // Check for action flags.
+  if (response.output.action === 'display_time') {
+    // User asked what time it is, so we output the local system time.
+    console.log('The current time is ' + new Date().toLocaleTimeString() + '.');
+  } else if (response.output.action === 'end_conversation') {
+    // User said goodbye, so we're done.
+    console.log(response.output.text[0]);
+    endConversation = true;
+  } else {
+    // Display the output from dialog, if any.
+    if (response.output.text.length != 0) {
+        console.log(response.output.text[0]);
+    }
+  }
+
+  // If we're not done, prompt for the next round of input.
+  if (!endConversation) {
+    var newMessageFromUser = prompt('>> ');
+    service.message({
+      workspace_id: workspace_id,
+      input: { text: newMessageFromUser },
+      // Send back the context to maintain state.
+      context : response.context,
+    }, processResponse)
+  }
+}
